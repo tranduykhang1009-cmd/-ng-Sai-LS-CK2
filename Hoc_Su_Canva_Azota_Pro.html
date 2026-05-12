@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Học Sử Pro - Đỉnh Cao Công Nghệ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Apple System Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@600;700;800&display=swap');
+        
+        :root {
+            --bg-dark: #09090b;
+            --card-bg: #18181b;
+            --btn-idle: #27272a;
+            --sys-red: #ef4444;
+            --sys-green: #22c55e;
+            --sys-blue: #3b82f6;
+            --sys-orange: #f59e0b;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100dvh; /* Khóa cứng chiều cao màn hình */
+            overflow: hidden; /* Cấm lướt toàn trang */
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- DYNAMIC ISLAND (iOS 18 Style) --- */
+        .island-wrapper {
+            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; display: flex; justify-content: center; width: 100%;
+        }
+        .dynamic-island {
+            background: #000; border-radius: 35px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.1);
+            width: 130px; height: 32px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 12px; cursor: pointer;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow: hidden; position: relative;
+        }
+        .dynamic-island.expanded {
+            width: 340px; height: 140px; border-radius: 35px; padding: 20px;
+            background: rgba(15,15,15,0.9); backdrop-filter: blur(20px);
+        }
+        
+        .island-idle { display: flex; justify-content: space-between; width: 100%; align-items: center; transition: opacity 0.3s; }
+        .dynamic-island.expanded .island-idle { opacity: 0; pointer-events: none; position: absolute; }
+        
+        .island-full {
+            opacity: 0; position: absolute; inset: 0; padding: 20px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            transition: opacity 0.3s 0.2s; pointer-events: none;
+        }
+        .dynamic-island.expanded .island-full { opacity: 1; pointer-events: auto; }
+
+        .visualizer { display: flex; gap: 3px; align-items: flex-end; height: 12px; }
+        .bar { width: 3px; background: var(--sys-orange); border-radius: 2px; animation: bounce 0.6s infinite alternate; }
+        .bar:nth-child(2) { animation-delay: 0.2s; }
+        .bar:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0% { height: 4px; } 100% { height: 12px; } }
+
+        /* --- SCREEN QUẢN LÝ --- */
+        .screen { display: none; flex-direction: column; height: 100%; width: 100%; }
+        .screen.active { display: flex; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+        /* --- SPLIT VIEW (Chống lướt) --- */
+        .split-top {
+            flex: 0 0 38dvh;
+            overflow-y: auto; padding: 60px 16px 16px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: radial-gradient(circle at top, rgba(59,130,246,0.05), transparent 80%);
+        }
+        .split-bot {
+            flex: 1;
+            padding: 12px 16px;
+            display: flex; flex-direction: column;
+            overflow: hidden; /* Cấm lướt */
+        }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        /* Lưới câu hỏi tự động co giãn */
+        .stmt-container {
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: space-evenly; gap: 8px;
+        }
+
+        .stmt-card {
+            background: var(--card-bg); border-radius: 16px; padding: 12px;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            border: 1px solid rgba(255,255,255,0.03);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .stmt-text {
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px; font-weight: 600; line-height: 1.4;
+            color: var(--text-main); flex: 1;
+        }
+
+        /* Nút Đúng / Sai gọn gàng bên phải */
+        .btn-choices {
+            display: flex; gap: 8px; flex-shrink: 0;
+        }
+        .tf-btn {
+            width: 40px; height: 40px; border-radius: 12px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-muted); font-weight: 800; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .tf-btn:active { transform: scale(0.9); }
+        .tf-btn.selected-true { background: rgba(34,197,94,0.2); border-color: var(--sys-green); color: var(--sys-green); box-shadow: 0 0 10px rgba(34,197,94,0.3); }
+        .tf-btn.selected-false { background: rgba(239,68,68,0.2); border-color: var(--sys-red); color: var(--sys-red); box-shadow: 0 0 10px rgba(239,68,68,0.3); }
+
+        /* Bôi màu từ khóa */
+        .kw-a { color: var(--sys-red); font-weight: 800; text-shadow: 0 0 8px rgba(239,68,68,0.4); }
+        .kw-b { color: var(--sys-green); font-weight: 800; text-shadow: 0 0 8px rgba(34,197,94,0.4); }
+        .kw-c { color: var(--sys-blue); font-weight: 800; text-shadow: 0 0 8px rgba(59,130,246,0.4); }
+        .kw-d { color: var(--sys-orange); font-weight: 800; text-shadow: 0 0 8px rgba(245,158,11,0.4); }
+
+        /* --- Header & Footer (Azota Style) --- */
+        .top-nav {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+        }
+        .bot-nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .nav-btn {
+            background: var(--card-bg); padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 14px;
+            display: flex; align-items: center; justify-content: center; color: white; border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.2s;
+        }
+        .nav-btn:active { transform: scale(0.95); }
+        .btn-submit { background: var(--sys-red); color: white; border: none; box-shadow: 0 4px 15px rgba(239,68,68,0.4); }
+
+        /* --- Màn hình Azota Result --- */
+        .azota-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; padding-bottom: 30px; }
+        .grid-item {
+            aspect-ratio: 1.2; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 15px; color: white; cursor: pointer; transition: transform 0.1s;
+        }
+        .grid-item:active { transform: scale(0.9); }
+        .gi-correct { background: var(--sys-green); box-shadow: 0 2px 10px rgba(34,197,94,0.3); }
+        .gi-wrong { background: var(--sys-red); box-shadow: 0 2px 10px rgba(239,68,68,0.3); }
+        .gi-empty { background: rgba(255,255,255,0.1); color: var(--text-muted); }
+
+        /* --- Màn hình Review --- */
+        .review-card {
+            background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 12px;
+            border: 2px solid transparent;
+        }
+        .review-card.correct { border-color: var(--sys-green); background: rgba(34,197,94,0.05); }
+        .review-card.wrong { border-color: var(--sys-red); background: rgba(239,68,68,0.05); }
+        
+        .exp-box {
+            margin-top: 12px; padding: 12px; border-radius: 12px; font-size: 13px; line-height: 1.5;
+            background: rgba(255,255,255,0.05); color: #cbd5e1;
+        }
+
+        .watermark { position: fixed; bottom: 10px; right: 10px; font-size: 10px; color: rgba(255,255,255,0.1); z-index: 9999; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div class="watermark">by Trần Duy Khang 11A8</div>
+
+    <!-- DYNAMIC ISLAND -->
+    <div class="island-wrapper">
+        <div class="dynamic-island" id="dynamic-island" onclick="app.toggleIsland()">
+            <div class="island-idle">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <div style="width:10px; height:10px; border-radius:50%; background:#111; box-shadow:inset -1px -1px 2px rgba(255,255,255,0.2);"></div>
+                    <span id="island-time" style="font-size:12px; font-weight:700; color:var(--sys-green);">00:00</span>
+                </div>
+                <div class="visualizer">
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                </div>
+            </div>
+            
+            <div class="island-full">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3113/3113054.png" style="width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,0.1); padding:4px;">
+                        <div>
+                            <div style="font-size:15px; font-weight:700;" id="island-name">Xin chào!</div>
+                            <div style="font-size:12px; color:var(--text-muted);" id="island-status">Đang ôn Lịch sử...</div>
+                        </div>
+                    </div>
+                    <div class="visualizer" style="height:20px;">
+                        <div class="bar" style="background:var(--sys-blue);"></div>
+                        <div class="bar" style="background:var(--sys-blue);"></div>
+                        <div class="bar" style="background:var(--sys-blue);"></div>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+                    <span style="font-size:12px; color:var(--text-muted);"><i class="fa-solid fa-battery-full text-white"></i> 100%</span>
+                    <span style="font-size:16px; font-weight:800; color:var(--sys-orange);" id="island-score">Điểm tạm tính: 0</span>
+                    <div style="display:flex; gap:16px; font-size:18px;"><i class="fa-solid fa-backward-step"></i><i class="fa-solid fa-pause"></i><i class="fa-solid fa-forward-step"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH CHÍNH -->
+    <div id="screen-home" class="screen active" style="padding: 24px; justify-content: center;">
+        <h1 style="font-family:'Nunito'; font-size: 36px; font-weight: 800; margin-bottom: 8px; color: var(--sys-blue); text-align: center;">Học Sử Pro</h1>
+        <p style="color: var(--text-muted); text-align: center; margin-bottom: 30px; font-size: 15px;">Điền tên và chọn bài để bắt đầu</p>
+        
+        <input type="text" id="input-name" placeholder="Tên của bạn..." style="width: 100%; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 18px; color: white; font-size: 16px; margin-bottom: 24px; outline: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+        
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button class="nav-btn" onclick="app.start('11')" style="justify-content: space-between; padding: 16px;"><span style="color:var(--sys-orange)"><i class="fa-solid fa-landmark mr-2"></i> Bài 11 (6 Câu)</span> <i class="fa-solid fa-chevron-right text-gray-600"></i></button>
+            <button class="nav-btn" onclick="app.start('12')" style="justify-content: space-between; padding: 16px;"><span style="color:var(--sys-blue)"><i class="fa-solid fa-water mr-2"></i> Bài 12 (10 Câu)</span> <i class="fa-solid fa-chevron-right text-gray-600"></i></button>
+            <button class="nav-btn" onclick="app.start('13')" style="justify-content: space-between; padding: 16px;"><span style="color:var(--sys-green)"><i class="fa-solid fa-anchor mr-2"></i> Bài 13 (6 Câu)</span> <i class="fa-solid fa-chevron-right text-gray-600"></i></button>
+            <button class="nav-btn" onclick="app.start('all')" style="justify-content: space-between; background: rgba(59,130,246,0.2); border-color: var(--sys-blue); padding: 16px;"><span style="color:white"><i class="fa-solid fa-bolt mr-2 text-blue-500"></i> Trộn 22 Câu Hỏi</span> <i class="fa-solid fa-chevron-right text-blue-500"></i></button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH LÀM BÀI -->
+    <div id="screen-quiz" class="screen">
+        <!-- Nửa trên: Tư liệu -->
+        <div class="split-top">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                <span style="background: rgba(245,158,11,0.2); color: var(--sys-orange); padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 800;" id="q-lesson">BÀI 11</span>
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 700;"><i class="fa-solid fa-quote-left mr-1"></i> TƯ LIỆU ĐỌC</span>
+            </div>
+            <div id="q-passage" style="font-size: 15px; line-height: 1.6; text-align: justify; color: #d4d4d8;"></div>
+        </div>
+
+        <!-- Nửa dưới: Câu hỏi ép flex chống lướt -->
+        <div class="split-bot">
+            <div class="top-nav">
+                <div style="font-size: 20px; font-weight: 800; font-family:'Nunito';" id="q-counter">Câu 1/22</div>
+                <button class="nav-btn btn-submit" style="padding: 8px 16px;" onclick="app.reqSubmit()">Nộp bài</button>
+            </div>
+            
+            <div class="stmt-container" id="stmt-container">
+                <!-- 4 ý render ở đây -->
+            </div>
+
+            <div class="bot-nav">
+                <button class="nav-btn" style="padding: 12px;" onclick="app.prev()"><i class="fa-solid fa-chevron-left"></i></button>
+                <button class="nav-btn" style="flex:1; margin: 0 12px; background: var(--sys-blue); border:none;" onclick="app.openPalette()"><i class="fa-solid fa-list mr-2"></i> Danh sách</button>
+                <button class="nav-btn" style="padding: 12px;" onclick="app.next()"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH KẾT QUẢ -->
+    <div id="screen-result" class="screen" style="padding: 24px; padding-top: 70px; overflow-y: auto;">
+        <h2 style="font-size: 26px; font-weight: 800; margin-bottom: 16px; font-family:'Nunito'; text-align: center;">Báo Cáo Điểm</h2>
+        <div style="background: var(--card-bg); padding: 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 24px; text-align: center;">
+            <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">ĐIỂM SỐ CỦA BẠN</div>
+            <div id="res-score" style="font-size: 64px; font-weight: 800; color: var(--sys-blue); line-height: 1;">0.00</div>
+            <div style="font-size: 15px; color: var(--text-muted); font-weight: 600; margin-top: 8px;">/ <span id="res-total">10</span></div>
+            <div style="font-size: 18px; font-weight: 800; margin-top: 16px;" id="res-rating">Chưa đạt</div>
+        </div>
+
+        <div style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">DANH SÁCH CÂU HỎI</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; font-style: italic;">Bấm vào ô màu đỏ để xem giải thích chi tiết</div>
+        
+        <div id="azota-grid" class="azota-grid"></div>
+
+        <div style="display: flex; gap: 12px; flex-direction: column; margin-top: 24px; padding-bottom: 40px;">
+            <button id="btn-revenge" class="nav-btn" style="background: var(--sys-orange); color: #fff; border:none; padding: 16px;" onclick="app.revenge()"><i class="fa-solid fa-fire mr-2"></i> Phục Thù Câu Sai</button>
+            <button class="nav-btn" style="padding: 16px;" onclick="location.reload()"><i class="fa-solid fa-house mr-2"></i> Về Trang Chủ</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH REVIEW (Bấm từ Grid vào) -->
+    <div id="screen-review" class="screen">
+        <div class="split-top" id="rev-split-top">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                <span style="background: rgba(245,158,11,0.2); color: var(--sys-orange); padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 800;" id="rev-lesson">BÀI 11</span>
+                <span style="font-size: 12px; color: var(--text-muted); font-weight: 700;"><i class="fa-solid fa-eye mr-1"></i> ĐANG XEM LẠI</span>
+            </div>
+            <div id="rev-passage" style="font-size: 15px; line-height: 1.6; text-align: justify; color: #d4d4d8;"></div>
+        </div>
+
+        <div class="split-bot" id="rev-split-bot" style="overflow-y: auto;">
+            <div class="top-nav">
+                <div style="font-size: 20px; font-weight: 800; font-family:'Nunito';" id="rev-qnum">Câu 1/22</div>
+                <button class="nav-btn" style="padding: 8px 16px;" onclick="app.closeReview()"><i class="fa-solid fa-xmark mr-1"></i> Đóng</button>
+            </div>
+            <div id="rev-stmt-container" style="display: flex; flex-direction: column; gap: 12px; padding-bottom: 40px;">
+                <!-- Review statements -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Palette -->
+    <div id="modal-palette" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:2000; display:none; align-items:flex-end; backdrop-filter: blur(5px);">
+        <div style="background: var(--card-bg); width: 100%; border-radius: 24px 24px 0 0; padding: 24px; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="font-size: 18px; font-weight: 800;">Danh sách đã làm</h3>
+                <button onclick="document.getElementById('modal-palette').style.display='none'" style="background: rgba(255,255,255,0.1); border:none; width:32px; height:32px; border-radius:16px; color:white;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="palette-grid" class="azota-grid" style="margin-top: 0;"></div>
+        </div>
+    </div>
+
+    <!-- DỮ LIỆU GỐC & JAVASCRIPT -->
+    <script>
+        const masterData = [
+            // --- BÀI 11 ---
+            {
+                l: "Bài 11",
+                p: "Từ năm 1832, đại diện của <span class='kw-b'>Đô sát viện, bộ Hình và Đại lý tự tạo thành Tam pháp ty</span> – cơ quan chuyên nhận đơn của những người kêu oan, tố cáo, đồng thời thẩm tra, xét xử những việc oan ức. <span class='kw-d'>Hàng tháng, vào các ngày 6, 16, 26 âm lịch, Tam pháp ty họp để xét xử.</span> Nếu không đúng những ngày đó, người đưa đơn có thể đến trước của Tam pháp ty đánh trống Đăng Văn để báo hiệu. Trống Đăng Văn đã phát huy được chức năng trong việc tạo điều kiện cho dân chúng thể hiện tiếng nói của mình mỗi khi bị kết án oan. Đồng thời, sự tồn tại của trống Đăng Văn đã phần nào <span class='kw-c'>hạn chế sự chuyên quyền, độc đoán và thói ức hiếp dân chúng của một số quan lại địa phương</span>, thể hiện được sự nghiêm minh của pháp luật thời bấy giờ.",
+                s: [
+                    { t: "Đoạn trích tập trung phản ánh sự bất cập, hạn chế trong xử lý các hình án dưới thời kì nhà Nguyễn.", a: false, e: "Tư liệu mô tả chức năng giải quyết oan khuất và mặt tích cực của Tam pháp ty, không phải sự bất cập." },
+                    { t: "Tam pháp ty được tạo nên bởi các thành viên của 3 cơ quan, gồm: Đô sát viện, bộ Hình và Đại lý tự.", a: true, e: "Trích nguyên văn dòng đầu của tư liệu." },
+                    { t: "Trống Đăng Văn có thể coi là một biểu tượng dân chủ dưới triều Nguyễn, góp phần hạn chế sự chuyên quyền.", a: true, e: "Đúng, giúp dân chúng thể hiện tiếng nói khi bị oan ức." },
+                    { t: "Tam pháp ty là cơ quan chuyên nhận đơn của những người kêu oan và họp bàn xét xử vào một số ngày cố định.", a: true, e: "Đúng, cơ quan này họp xét xử cố định vào ngày 6, 16, 26 âm lịch." }
+                ]
+            },
+            {
+                l: "Bài 11",
+                p: "Dưới thời vua Minh Mạng, đứng đầu tỉnh là <span class='kw-d'>Tổng đốc (phụ trách một tỉnh lớn và một tỉnh nhỏ liền kề) hoặc Tuần phủ (phụ trách một tỉnh nhỏ)</span>. <span class='kw-c'>Hai cơ quan giúp việc cho Tổng đốc và Tuần phủ là Bố chính ty (do Bố chính sứ đứng đầu) và Án sát ty (do Án sát sứ đứng đầu).</span> <span class='kw-b'>Bố chính ty phụ trách thuế khóa, đinh điền, hộ tịch.</span> Án sát ty phụ trách hình án.",
+                s: [
+                    { t: "Đoạn trích phản ánh bộ máy chính quyền dưới thời vua Minh Mạng ở cấp trung ương.", a: false, e: "Đoạn trích nói về Tổng đốc, Tuần phủ -> Đây là bộ máy cấp ĐỊA PHƯƠNG (cấp tỉnh)." },
+                    { t: "Một trong những cải cách hành chính của vua Minh Mạng là chia nước ta ra thành các tỉnh.", a: true, e: "Minh Mạng đã chia cả nước thành 30 tỉnh và phủ Thừa Thiên." },
+                    { t: "Dưới thời vua Minh Mạng, Bố chính ty và Án sát ty là hai cơ quan giúp việc cho người đứng đầu cấp tỉnh.", a: true, e: "Chính xác, Bố chính ty và Án sát ty giúp việc trực tiếp cho Tổng đốc và Tuần phủ." },
+                    { t: "Tổng đốc thường là người phụ trách hai tỉnh... Tỉnh còn lại do Tuần phủ đứng đầu, đặt dưới sự kiêm quản của Tổng đốc.", a: true, e: "Đúng với quy định phân cấp quản lý chéo đặc trưng của Minh Mạng." }
+                ]
+            },
+            {
+                l: "Bài 11",
+                p: "Năm 1802, nhà Nguyễn thành lập với lãnh thổ mới rộng lớn, kéo dài từ ải Nam Quan đến mũi Cà Mau. Thời gian đầu, bộ máy chính quyền về cơ bản <span class='kw-b'>tiếp tục kế thừa mô hình nhà Lê trung hưng kết hợp với một số biện pháp tạm thời</span>. Thời Gia Long, triều đình trung ương ở Phú Xuân chỉ trực tiếp kiểm soát 4 dinh và 7 trấn từ Thanh Hóa đến Bình Thuận. Quản lý 11 trấn ở phía bắc là <span class='kw-d'>Bắc Thành</span>, quản lý 5 trấn ở phía nam là <span class='kw-d'>Gia Định Thành</span>. Đứng đầu Bắc Thành và Gia Định Thành là chức Tổng trấn.",
+                s: [
+                    { t: "Đoạn trích cung cấp thông tin về tình hình nhà Nguyễn dưới thời vua Gia Long trên các mặt chính trị, kinh tế, xã hội", a: false, e: "Đoạn trích chỉ nói về tổ chức hành chính lãnh thổ (chính trị)." },
+                    { t: "Bộ máy chính quyền dưới thời vua Gia Long thiếu sự thống nhất và đồng bộ trên phạm vi cả nước.", a: true, e: "Đúng, vì triều đình chỉ quản lý trực tiếp miền Trung, Nam - Bắc giao cho 2 Tổng trấn." },
+                    { t: "Dưới thời vua Gia Long, quyền lực của nhà vua và triều đình phong kiến trung ương bị hạn chế.", a: false, e: "Vua vẫn nắm quyền tối cao tuyệt đối, Tổng trấn chỉ là uỷ quyền tạm thời." },
+                    { t: "Sự tồn tại của Bắc Thành và Gia Định thành bộc lộ tính phân quyền và tiềm ẩn nguy cơ lạm quyền.", a: true, e: "Tổng trấn có quyền lực rất lớn tại địa phương, dễ dẫn đến cát cứ." }
+                ]
+            },
+            {
+                l: "Bài 11",
+                p: "Tháng 9 năm 1832, Minh Mạng lập ra <span class='kw-a'>Đô sát viện</span>. Nhiệm vụ của Đô sát viện là <span class='kw-c'>giám sát hoạt động của các quan chức trong hệ thống cơ quan hành chính từ trung ương đến địa phương</span>. Đây là một cơ quan hoạt động độc lập, <span class='kw-b'>không chịu sự kiểm soát của bất kì một cơ quan nào ở triều đình ngoài nhà vua</span>. Các quan chức của Đô sát viện có nhiệm vụ phối hợp với các Giám sát ngự sử 16 đạo để hoạt động kiểm soát và kiểm tra công việc của bộ máy quan lại ở địa phương.",
+                s: [
+                    { t: "Đô sát viện là một cơ quan chủ chốt của triều đình trung ương được vua Minh Mạng thành lập thế kỉ XVIII", a: false, e: "Năm 1832 thuộc thế kỷ XIX, không phải XVIII." },
+                    { t: "Đô sát viện là cơ quan chỉ chịu sự kiểm soát và giám sát duy nhất của nhà vua", a: true, e: "Đúng nguyên văn: 'không chịu sự kiểm soát của bất kì cơ quan nào ngoài nhà vua'." },
+                    { t: "Đô sát viện có nhiệm vụ giám sát các cơ quan, quan lại từ trung ương đến địa phương", a: true, e: "Đúng chức năng thanh tra toàn diện của cơ quan này." },
+                    { t: "Trong việc kiểm tra địa phương, Đô sát viện hoạt động độc lập với các Giám sát ngự sử 16 đạo.", a: false, e: "Sai ở chữ 'độc lập'. Tư liệu ghi rõ là phải 'phối hợp'." }
+                ]
+            },
+            {
+                l: "Bài 11",
+                p: "Cuộc cải cách của vua Minh Mạng diễn ra trên nhiều lĩnh vực và lĩnh vực nào cũng để lại dấu ấn tích cực và bài học lịch sử cho hậu thế. Một trong những dấu ấn cải cách trên <span class='kw-a'>lĩnh vực văn hóa</span> của vua Minh Mạng là việc thành lập <span class='kw-b'>Quốc sử quán</span> vào tháng 7 – 1820. Trong 125 năm tồn tại, Quốc sử quán đã để lại rất nhiều công trình đồ sộ về lịch sử, địa lý, văn hóa và con người Việt Nam. Đây là <span class='kw-c'>nguồn tài liệu quý giá</span> cho các nhà nghiên cứu hiện nay.",
+                s: [
+                    { t: "Đoạn trích cung cấp thông tin về những dấu ấn cải cách của vua Minh Mạng trên các lĩnh vực chính trị, xã hội, văn hóa", a: false, e: "Đoạn trích chỉ nói về duy nhất lĩnh vực VĂN HÓA." },
+                    { t: "Quốc sử quán là một cơ quan chuyên làm nhiệm vụ thu thập và biên soạn sách sử", a: true, e: "Đúng chức năng cốt lõi của Quốc sử quán." },
+                    { t: "Việc nghiên cứu về Việt Nam thời Nguyễn chỉ có thể được thực hiện thông qua tài liệu của Quốc sử quán", a: false, e: "Từ 'chỉ có thể' là sai. Còn nhiều nguồn khác như văn bia, tài liệu phương Tây..." },
+                    { t: "Cải cách diễn ra trên nhiều lĩnh vực, nhưng để lại dấu ấn sâu sắc nhất là lĩnh vực văn hóa.", a: false, e: "Dấu ấn sâu sắc và quan trọng nhất của vua Minh Mạng là cải cách HÀNH CHÍNH." }
+                ]
+            },
+            {
+                l: "Bài 11",
+                p: "Hiệu quả cải cách hành chính của Minh Mạng là đã <span class='kw-a'>tăng cường được tính thống nhất quốc gia, củng cố được vương triều Nguyễn, phần nào ổn định được xã hội</span> sau hàng thế kỉ chiến tranh... Nhưng bị <span class='kw-d'>hạn chế và không tạo nên được sức mạnh kinh tế, chính trị, văn hóa, xã hội và quan hệ quốc tế tốt đẹp</span>, có khả năng kiềm chế được ngoại xâm.",
+                s: [
+                    { t: "Đoạn tư liệu phản ánh tác động tích cực và hạn chế trong cải cách trên lĩnh vực hành chính.", a: true, e: "Đoạn văn nêu cả hiệu quả (tích cực) và hạn chế (tiêu cực)." },
+                    { t: "Một trong những hiệu quả tích cực là tạo dựng được mối quan hệ tốt đẹp với bên ngoài", a: false, e: "Sai vì tư liệu ghi rõ hạn chế là 'KHÔNG tạo nên được quan hệ quốc tế tốt đẹp'." },
+                    { t: "Cải cách đã thống nhất các đơn vị hành chính địa phương, hoàn thành thống nhất đất nước về mặt hành chính.", a: true, e: "Đúng, việc chia 30 tỉnh đã hoàn thành thống nhất quyền lực hành chính." },
+                    { t: "Cải cách góp phần ổn định nhưng không tạo được động lực thúc đẩy sự phát triển mạnh mẽ của kinh tế.", a: true, e: "Khớp hoàn toàn với ý câu cuối đoạn tư liệu." }
+                ]
+            },
+
+            // --- BÀI 12 ---
+            {
+                l: "Bài 12",
+                p: "<span class='kw-a'>Biển Đông là tên do người Việt Nam đặt</span> từ xa xưa cho vùng biển nằm ở phía đông đất nước. Tên tiếng Anh của Biển Đông là <span class='kw-b'>South China Sea</span>, do tổ chức Thủy đạc quốc tế đặt theo thông lệ quốc tế dựa vào tên địa danh của một quốc gia ven biển có diện tích lãnh thổ đất liền lớn nhất <span class='kw-c'>nhưng tên gọi này không hàm ý về chủ quyền</span>. Người Trung Quốc gọi là Nam Hải, người <span class='kw-d'>Phi-lip-pin gọi là Biển Tây</span>.",
+                s: [
+                    { t: "Biển Đông có nhiều tên gọi khác nhau tùy theo cách gọi của từng quốc gia.", a: true, e: "Việt Nam gọi Biển Đông, Phi-lip-pin gọi Biển Tây..." },
+                    { t: "Tổ chức Thủy đạc quốc tế đặt tên South China Sea vì Trung Quốc có chủ quyền lớn nhất.", a: false, e: "Đặt theo diện tích đất liền lớn nhất, KHÔNG hàm ý chủ quyền." },
+                    { t: "Theo tổ chức Thủy đạc quốc tế, Biển Đông là vùng biển thuộc chủ quyền duy nhất của Trung Quốc.", a: false, e: "Tư liệu nhấn mạnh tên gọi này không hàm ý chủ quyền." },
+                    { t: "Người Việt Nam gọi Biển Đông do nằm phía đông, Phi-lip-pin gọi Biển Tây vì nằm phía tây nước họ.", a: true, e: "Đúng quy luật đặt tên theo phương hướng tương đối." }
+                ]
+            },
+            {
+                l: "Bài 12",
+                p: "Biển Đông là nơi cư trú của 12 nghìn loài sinh vật, trong đó có khoảng 2040 loài cá, 350 loài san hô, <span class='kw-b'>662 loài rong biển</span>... Trong khu vực này, tập trung <span class='kw-b'>221 loài cây nước mặn</span> tạo nên diện tích rừng ngập mặn tương đối lớn. Khu vực thềm lục địa của biển Đông có <span class='kw-c'>tiềm năng dầu khí cao</span> như bồn trũng <span class='kw-d'>Bru-nây, Nam Côn sơn, Hoàng Sa</span>…",
+                s: [
+                    { t: "Đoạn trích cung cấp thông tin về nguồn tài nguyên thiên nhiên phong phú ở Biển Đông.", a: true, e: "Liệt kê chi tiết sinh vật biển, rừng ngập mặn và dầu khí." },
+                    { t: "Nguồn tài nguyên sinh vật rất phong phú, nhưng chỉ có động vật mà không có thực vật.", a: false, e: "Sai vì có 662 loài rong biển và 221 loài cây nước mặn (thực vật)." },
+                    { t: "Dầu khí là một trong những nguồn tài nguyên khoáng sản đặc biệt quan trọng ở Biển Đông.", a: true, e: "Đúng, thềm lục địa có trữ lượng dầu khí rất cao." },
+                    { t: "Nguồn dầu khí ở Biển Đông chỉ có thể được khai thác ở 3 địa điểm: Bru-nây, Nam Côn sơn, Hoàng Sa.", a: false, e: "Chữ 'chỉ có thể' là sai. Trong bài dùng chữ 'như', nghĩa là ví dụ." }
+                ]
+            },
+            {
+                l: "Bài 12",
+                p: "<span class='kw-b'>Quần đảo Hoàng Sa (trực thuộc huyện đảo Hoàng Sa, thành phố Đà Nẵng)</span> bao gồm hai nhóm đảo chính... trong đó <span class='kw-c'>lớn nhất là đảo Phú Lâm</span>. <span class='kw-b'>Quần đảo Trường Sa (trực thuộc huyện đảo Trường Sa, tỉnh Khánh Hòa)</span> được chia thành 8 cụm là Song Tử, <span class='kw-d'>Loại Ta</span>, Thị Tứ, Nam Yết...",
+                s: [
+                    { t: "Đoạn tư liệu cung cấp thông tin về tiềm năng phát triển du lịch của hai quần đảo.", a: false, e: "Chỉ mô tả vị trí hành chính và các cụm đảo, không nói về du lịch." },
+                    { t: "Quần đảo Hoàng Sa và Trường Sa lần lượt trực thuộc Đà Nẵng và Khánh Hòa.", a: true, e: "Đúng thông tin hành chính hiện hành." },
+                    { t: "Đảo Phú Lâm là một trong những đảo lớn nhất thuộc nhóm phía đông của Hoàng Sa.", a: true, e: "Đúng, lớn nhất trong nhóm An Vĩnh (phía đông)." },
+                    { t: "Nhóm đảo Loại Ta là 1 trong 8 cụm thuộc quần đảo Trường Sa.", a: true, e: "Đúng, nằm trong danh sách 8 cụm được liệt kê." }
+                ]
+            },
+            {
+                l: "Bài 12",
+                p: "Biển Đông là mạch đường thiết yếu vận chuyển dầu và tài nguyên... Nhiều nước ở khu vực Đông Á có <span class='kw-b'>nền kinh tế phụ thuộc sống còn vào con đường biển này</span>. Trung Quốc có 29/39 tuyến hàng hải và <span class='kw-c'>khoảng 60% lượng hàng hóa xuất nhập khẩu... vận chuyển qua biển Đông</span>. Ven Biển Đông có <span class='kw-d'>2 cảng hiện đại nhất thế giới là Xin-ga-po và Hồng Công</span>.",
+                s: [
+                    { t: "Những dẫn chứng cho thấy Biển Đông là tuyến đường giao thông biển huyết mạch của khu vực.", a: true, e: "Lượng vận tải hàng hóa khổng lồ chứng minh đây là tuyến huyết mạch." },
+                    { t: "Nhiều quốc gia khu vực Đông Bắc Á và Đông Nam Á có nền kinh tế phụ thuộc trực tiếp vào Biển Đông.", a: true, e: "Nhật Bản, Hàn Quốc và các nước ĐNÁ phụ thuộc sống còn." },
+                    { t: "Tất cả các tuyến đường hàng hải của Trung Quốc để xuất nhập khẩu đều phải đi qua Biển Đông.", a: false, e: "Sai ở chữ 'Tất cả'. TQ có 29/39 tuyến, không phải 100%." },
+                    { t: "Xin-ga-po và Hồng Công là hai cảng biển lớn và hiện đại nhất ở khu vực ven Biển Đông.", a: true, e: "Đúng, là 2 cảng trung chuyển hàng hải lớn nhất." }
+                ]
+            },
+            {
+                l: "Bài 12",
+                p: "Các nước giáp Biển Đông có <span class='kw-c'>sản lượng đánh bắt và nuôi trồng hải sản đứng hàng đầu thế giới</span>... Theo <span class='kw-b'>tổ chức Lương thực và Nông nghiệp Liên hợp quốc (FAO)</span>, Biển Đông chiếm <span class='kw-d'>10% tổng khối lượng đánh bắt toàn thế giới</span>.",
+                s: [
+                    { t: "Đoạn tư liệu cho thấy Biển Đông có tầm quan trọng chiến lược về kinh tế, chính trị - an ninh.", a: false, e: "Tư liệu chỉ nói về sản lượng thuỷ sản (Kinh tế), không nhắc đến an ninh." },
+                    { t: "Theo tổ chức UNESCO, Biển Đông là vùng biển có sản lượng đánh bắt hải sản hàng đầu thế giới.", a: false, e: "Tổ chức được nhắc đến là FAO, không phải UNESCO." },
+                    { t: "Việt Nam là một trong những quốc gia ven Biển Đông có sản lượng đánh bắt đứng hàng đầu thế giới", a: true, e: "Việt Nam nằm trong danh sách các nước được liệt kê." },
+                    { t: "Biển Đông là vùng biển có sản lượng đánh bắt chiếm tỉ lệ gần như tuyệt đối trên toàn thế giới.", a: false, e: "Chỉ chiếm 10%, không thể gọi là 'gần như tuyệt đối'." }
+                ]
+            },
+            {
+                l: "Bài 12",
+                p: "<span class='kw-a'>Đảo Trường Sa... là một trong những đảo lớn, quan trọng</span>... Hiện nay, <span class='kw-b'>trên đảo Trường Sa và một số đảo khác đã thành lập xã đảo</span>. Nhiều công trình dân sinh được xây dựng góp phần cải thiện đời sống... đồng thời <span class='kw-c'>góp phần củng cố và tăng cường cho công cuộc bảo vệ, thực thi chủ quyền của Tổ quốc</span>.",
+                s: [
+                    { t: "Đảo Trường Sa là đảo lớn và quan trọng duy nhất thuộc quần đảo Trường Sa.", a: false, e: "Từ 'duy nhất' là sai. Nó chỉ là 'một trong những' đảo lớn." },
+                    { t: "Trên đảo Trường Sa hiện nay, nhà nước ta đã thành lập được xã đảo và xây dựng công trình dân sinh.", a: true, e: "Đúng, có trường học, bệnh xá..." },
+                    { t: "Việc thành lập các xã đảo và huyện đảo là một biện pháp thực thi chủ quyền biển đảo của Nhà nước ta.", a: true, e: "Quản lý hành chính dân sự là minh chứng đanh thép về chủ quyền." },
+                    { t: "Việc xây dựng công trình trên đảo Trường Sa nhằm mục đích duy nhất là nâng cao đời sống nhân dân.", a: false, e: "Ngoài đời sống dân sinh, còn 'củng cố, thực thi chủ quyền Tổ quốc'." }
+                ]
+            },
+            {
+                l: "Bài 12",
+                p: "Biển Đông có khí hậu mang tính chất nhiệt đới... Đặc biệt, đây là <span class='kw-b'>khu vực hình thành và hoạt động nhiều của áp thấp nhiệt đới, bão, sóng thần</span>. Mỗi năm trung bình có 9 – 10 cơn bão... <span class='kw-d'>Vị trí, địa lý và khí hậu đặc biệt tạo cho vùng Biển Đông sự đa dạng sinh học</span> điển hình trên thế giới về cấu trúc thành phần <span class='kw-a'>loài động thực vật, hệ sinh thái</span>.",
+                s: [
+                    { t: "Sự đa dạng về sinh học ở Biển Đông chỉ chủ yếu tập trung ở các loài động vật.", a: false, e: "Đa dạng cả động vật, thực vật và hệ sinh thái." },
+                    { t: "Một trong những khó khăn của các quốc gia ven Biển Đông là phải đối mặt với bão, sóng thần.", a: true, e: "Biển Đông có trung bình 9-10 cơn bão mỗi năm." },
+                    { t: "Các loại thiên tai như bão... ở khu vực châu Á – Thái Bình Dương đều xuất phát từ Biển Đông.", a: false, e: "Bão còn xuất phát từ ngoài khơi Thái Bình Dương, không 'đều' từ Biển Đông." },
+                    { t: "Yếu tố quy định sự đa dạng sinh học của Biển Đông là vị trí, địa lý và khí hậu.", a: true, e: "Đúng nguyên văn câu chốt của tư liệu." }
+                ]
+            },
+            {
+                l: "Bài 12",
+                p: "Tại các đảo có thể phát triển <span class='kw-c'>ngành đóng tàu, nuôi trồng thủy sản, du lịch</span>... Tuy nhiên, <span class='kw-a'>do cách xa bờ, khí hậu khắc nghiệt, thiếu nước ngọt, bão tố quanh năm, dân cư thưa thớt</span> nên khó khăn cho xây dựng cơ sở kinh tế.",
+                s: [
+                    { t: "Đoạn tư liệu chỉ cung cấp thông tin về tiềm năng và thuận lợi phát triển kinh tế ở hai quần đảo.", a: false, e: "Đoạn cuối nêu rõ những 'khó khăn', không chỉ toàn thuận lợi." },
+                    { t: "Các ngư trường đánh bắt xa bờ của nước ta chỉ được hình thành ở Hoàng Sa và Trường Sa.", a: false, e: "Ngư trường xa bờ còn nhiều khu vực khác, không 'chỉ' ở 2 quần đảo này." },
+                    { t: "Ngành đóng tàu và du lịch là một trong những thế mạnh có thể khai thác ở hai quần đảo.", a: true, e: "Đúng theo liệt kê tiềm năng ở đoạn đầu." },
+                    { t: "Trở ngại duy nhất cho sự phát triển của hai quần đảo hiện nay là dân cư còn quá thưa thớt.", a: false, e: "Còn nhiều trở ngại khác như cách xa bờ, thiếu nước ngọt, bão tố..." }
+                ]
+            },
+            {
+                l: "Bài 12",
+                p: "Biển Đông là <span class='kw-a'>tuyến đường giao thông biển huyết mạch kết nối Thái Bình Dương với Ấn Độ Dương</span>... đặc biệt là eo biển <span class='kw-c'>Ma-lắc-ca</span>... Mỗi ngày qua lại Biển Đông có <span class='kw-d'>hơn 10% là tàu có trọng tải từ 30.000 tấn trở lên</span>.",
+                s: [
+                    { t: "Thông tin cho thấy Biển Đông là địa bàn chiến lược quan trọng về kinh tế ở châu Á – Thái Bình Dương.", a: true, e: "Lượng tàu thuyền khổng lồ chứng minh đây là vùng kinh tế chiến lược." },
+                    { t: "Biển Đông là tuyến đường biển duy nhất nối liền Thái Bình Dương với Ấn Độ Dương.", a: false, e: "Là tuyến đường ngắn nhất và quan trọng, nhưng không phải 'duy nhất'." },
+                    { t: "Khu vực Biển Đông có rất nhiều eo biển quan trọng, trong đó quan trọng nhất là Ma-lắc-ca.", a: true, e: "Eo biển Ma-lắc-ca là hành lang kết nối chính." },
+                    { t: "Mỗi ngày có khoảng 150–200 tàu qua lại Biển Đông, trong đó tàu chở dầu đều có trọng tải từ 30.000 tấn trở lên.", a: false, e: "Tư liệu ghi 'hơn 10%', không phải 'đều' (tất cả) là 30.000 tấn." }
+                ]
+            },
+            {
+                l: "Bài 12",
+                p: "Việt Nam phải trở thành <span class='kw-b'>quốc gia mạnh về biển</span>... phát triển bền vững kinh tế biển <span class='kw-d'>gắn liền với đảm bảo quốc phòng, an ninh</span>... (Trích <span class='kw-a'>Nghị quyết số 36 – NQ/TW ngày 22-10-2018</span>).",
+                s: [
+                    { t: "Nghị quyết số 36 – NQ/TW đã đưa ra nhiều bằng chứng khẳng định Hoàng Sa và Trường Sa thuộc chủ quyền VN.", a: false, e: "Nghị quyết 36 là về chiến lược kinh tế biển, KHÔNG phải văn kiện chứng minh lịch sử." },
+                    { t: "Quá trình xây dựng và bảo vệ Tổ quốc của Việt Nam hiện nay có sự gắn bó mật thiết với Biển Đông.", a: true, e: "Biển là không gian sinh tồn gắn với sự nghiệp bảo vệ Tổ quốc." },
+                    { t: "Trách nhiệm phát triển bền vững kinh tế biển không liên quan đến những người dân sống trong khu vực đất liền.", a: false, e: "Tư liệu ghi rõ: trách nhiệm của CẢ HỆ THỐNG chính trị và MỌI người dân." },
+                    { t: "Nhiệm vụ phát triển kinh tế biển với đảm bảo an ninh quốc phòng luôn gắn bó mật thiết, không tách rời.", a: true, e: "Đúng theo chủ trương: 'phát triển kinh tế biển gắn liền với đảm bảo quốc phòng'." }
+                ]
+            },
+
+            // --- BÀI 13 ---
+            {
+                l: "Bài 13",
+                p: "“Họ Nguyễn đặt <span class='kw-b'>đội Hoàng Sa</span> 70 suất... cứ <span class='kw-c'>tháng 2 nhận giấy sai đi... Đến kì tháng 8 thì về</span>. Lấy được hoá vật của tàu như gươm ngựa... cùng hải sâm... Họ Nguyễn lại đặt <span class='kw-b'>đội Bắc Hải</span>... (Theo <span class='kw-a'>Phủ biên tạp lục</span>) ”",
+                s: [
+                    { t: "Đoạn trích trong cuốn Phủ biên tạp lục trình bày quá trình hình thành và phát triển tự nhiên của Hoàng Sa.", a: false, e: "Trình bày về hoạt động khai thác và xác lập chủ quyền của nhà nước, không phải hình thành tự nhiên." },
+                    { t: "Nhà Nguyễn đặt đội Hoàng Sa và Bắc Hải nhằm thực hiện quyền quản lý đối với hai quần đảo.", a: true, e: "Đây là công cụ thực thi chủ quyền một cách hòa bình và liên tục." },
+                    { t: "Đội Hoàng Sa gồm 70 người, thực hiện nhiệm vụ định kì hàng năm từ tháng 2 đến tháng 10.", a: false, e: "Sai ở tháng 10. Tư liệu ghi rõ 'tháng 2 đi... tháng 8 thì về'." },
+                    { t: "Một nhiệm vụ của hải đội là khai thác sản vật, thu lượm hàng hóa của những tàu gặp nạn.", a: true, e: "Đúng, thu lượm gươm ngựa (tàu nạn) và hải sâm (sản vật)." }
+                ]
+            },
+            {
+                l: "Bài 13",
+                p: "<span class='kw-a'>“Sự kiện 14 – 3”</span> cũng lùi vào dĩ vãng... khúc bi tráng của những chiến sĩ hải quân Việt Nam... Trận chiến <span class='kw-a'>Gạc Ma</span> đã được ghi trong chính sử. 64 liệt sĩ đã ngã xuống, <span class='kw-d'>mãi mãi bất tử trong lòng nhân dân</span>.",
+                s: [
+                    { t: "“Sự kiện 14 – 3” nhắc đến là cuộc đấu tranh anh dũng của chiến sĩ hải quân VN chống TQ trên đảo Gạc Ma.", a: true, e: "Sự kiện 14/3/1988 Trung Quốc dùng vũ lực cưỡng chiếm Gạc Ma." },
+                    { t: "Sự kiện Gạc Ma được nhắc lại vừa để khơi dậy thù hằn dân tộc, vừa để thế hệ trẻ bảo vệ chủ quyền.", a: false, e: "Nhắc lại để tri ân và giáo dục lòng yêu nước, KHÔNG chủ trương khơi dậy thù hằn." },
+                    { t: "Theo trung tá Nguyễn Viết Chức, trận chiến Gạc Ma là thất bại, nỗi đau ấy cần phải được quên đi.", a: false, e: "Nỗi đau là bài học để giữ biển, không phải để quên đi." },
+                    { t: "Tài liệu về trận chiến Gạc Ma hiện nay chỉ được ghi chép trong chính sử của Hải quân Việt Nam.", a: false, e: "Sự kiện đã được đưa vào SGK và sống mãi trong lòng nhân dân, không 'chỉ' ở sử." }
+                ]
+            },
+            {
+                l: "Bài 13",
+                p: "Việt Nam luôn ủng hộ <span class='kw-d'>giải quyết các tranh chấp... thông qua các tiến trình ngoại giao và pháp lý</span>, không sử dụng vũ lực... phù hợp với <span class='kw-a'>Công ước Luật biển năm 1982 của Liên hợp quốc (UNCLOS)</span>.",
+                s: [
+                    { t: "UNCLOS là tên viết tắt tiếng Anh của Công ước Luật biển của Liên hợp quốc.", a: true, e: "UNCLOS: United Nations Convention on the Law of the Sea." },
+                    { t: "Năm 2021, Tòa trọng tài vụ kiện Biển Đông đã ra Phán quyết cuối cùng về vụ kiện của Phi-lip-pin.", a: false, e: "Phán quyết ra năm 2016. Năm 2021 là kỷ niệm 5 năm." },
+                    { t: "Quan điểm của Bộ Ngoại giao VN chưa thật sự phù hợp với nguyện vọng của nhân dân.", a: false, e: "Giải quyết hòa bình, tôn trọng luật pháp quốc tế hoàn toàn phù hợp với ý chí nhân dân." },
+                    { t: "Đấu tranh ngoại giao và pháp lý là chủ trương nhất quán của Việt Nam trong giải quyết tranh chấp.", a: true, e: "Chính xác, ưu tiên đàm phán hòa bình." }
+                ]
+            },
+            {
+                l: "Bài 13",
+                p: "Nhà nước Việt Nam đã nhiều lần <span class='kw-a'>công bố “Sách trắng” (1979, 1981, 1988)</span>... Ngày 14-3-1988, Bộ Ngoại giao <span class='kw-c'>ra tuyên bố lên án Trung Quốc gây xung đột vũ trang</span>... Tháng 4-2007, Chính phủ <span class='kw-d'>thành lập thị trấn Trường Sa, xã Song Tử Tây</span>...",
+                s: [
+                    { t: "Trong các thập niên 80-90, Việt Nam đã nhiều lần công bố “Sách trắng”, đấu tranh pháp lý bảo vệ chủ quyền.", a: true, e: "Năm 79, 81, 88 đều là công cụ đấu tranh pháp lý mạnh mẽ." },
+                    { t: "Quần đảo Trường Sa thuộc chủ quyền VN nhưng đã từng bị Trung Quốc gây xung đột vũ trang nhằm xâm chiếm.", a: true, e: "Đúng, cụ thể là sự kiện 14/3/1988." },
+                    { t: "Trong Tuyên bố 1988, Bộ Ngoại giao Việt Nam khẳng định sẽ đáp trả quân sự đối với Trung Quốc.", a: false, e: "Việt Nam 'lên án' chứ không lấy đáp trả quân sự làm phương thức giải quyết." },
+                    { t: "Một trong những biện pháp bảo vệ chủ quyền là thành lập các đơn vị hành chính tại quần đảo này.", a: true, e: "Thành lập thị trấn Trường Sa... là thực thi quản lý hành chính dân sự." }
+                ]
+            },
+            {
+                l: "Bài 13",
+                p: "Việt Nam tích cực thúc đẩy thực hiện đầy đủ <span class='kw-a'>Tuyên bố về ứng xử của các bên ở Biển Đông (DOC)</span>... xây dựng <span class='kw-a'>Bộ quy tắc ứng xử (COC)</span>. Tuy nhiên, đàm phán diễn ra rất khó khăn do <span class='kw-d'>bất đồng giữa các bên liên quan</span>.",
+                s: [
+                    { t: "DOC là tên viết tắt tiếng Anh của Bộ quy tắc ứng xử ở Biển Đông.", a: false, e: "DOC là 'Tuyên bố' về ứng xử. COC mới là 'Bộ quy tắc'." },
+                    { t: "Nguyên nhân khiến Biển Đông bất ổn là do tham vọng xâm chiếm và hoạt động quân sự của phương Tây.", a: false, e: "Tư liệu không nhắc đến phương Tây." },
+                    { t: "Việt Nam có một số hoạt động giải quyết tranh chấp hòa bình nhưng chưa thể hiện sự tích cực, chủ động.", a: false, e: "Sai. Tư liệu ghi rõ Việt Nam 'tích cực thúc đẩy', 'chủ động phối hợp'." },
+                    { t: "Một trong những khó khăn trong việc giải quyết tranh chấp hiện nay là sự bất đồng giữa các bên liên quan.", a: true, e: "Đúng, đó là rào cản chính trong việc đàm phán COC." }
+                ]
+            },
+            {
+                l: "Bài 13",
+                p: "Năm <span class='kw-a'>1956</span>, Trung Quốc chiếm một phần Hoàng Sa... Việt Nam Cộng hòa đã <span class='kw-c'>lên tiếng phản đối</span>... Tháng 4-1975, <span class='kw-d'>Hải quân Nhân dân Việt Nam đã thu hồi quần đảo Trường Sa</span> có quân đội VNCH đóng giữ.",
+                s: [
+                    { t: "Toàn bộ quần đảo Hoàng Sa và Trường Sa của VN đã bị TQ và Đài Loan đánh chiếm ngay từ năm 1956.", a: false, e: "Sai ở chữ 'Toàn bộ'. Trung Quốc chỉ chiếm 'một phần' Hoàng Sa năm 1956." },
+                    { t: "Trung Quốc bắt đầu xâm chiếm Hoàng Sa khi quần đảo đang thuộc quản lý của chính phủ VNCH.", a: true, e: "Đúng, lợi dụng lúc Pháp rút quân chuyển giao cho VNCH." },
+                    { t: "Trước hành động xâm lấn của Trung Quốc, chính phủ VNCH đã có hành động quân sự giành thắng lợi cuối cùng.", a: false, e: "VNCH có phản đối nhưng không giành thắng lợi, Hoàng Sa mất hoàn toàn năm 1974." },
+                    { t: "Năm 1975, Hải quân Nhân dân Việt Nam đã tiếp quản Trường Sa từ tay Trung Quốc và Đài Loan.", a: false, e: "Hải quân NDVN giải phóng các đảo do quân đội VNCH đóng giữ, KHÔNG phải lấy lại từ TQ." }
+                ]
+            }
+        ];
+
+        let questions = [];
+        let curQ = 0;
+        let userAns = []; 
+        let timer = 0;
+        let timerInt;
+        let userName = "";
+
+        const app = {
+            start(mode, isRevenge = false) {
+                if(!isRevenge) {
+                    userName = document.getElementById('input-name').value.trim();
+                    if(!userName) userName = "Trần Duy Khang 11A8";
+                    
+                    if(mode === 'all') questions = [...masterData].sort(()=>Math.random()-0.5);
+                    else questions = masterData.filter(q => q.l === `Bài ${mode}`);
+                }
+                
+                curQ = 0;
+                userAns = questions.map(() => [null, null, null, null]);
+                timer = 0;
+                
+                document.getElementById('island-name').innerText = `Xin chào, ${userName}!`;
+                
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('screen-quiz').classList.add('active');
+                
+                this.render();
+                
+                clearInterval(timerInt);
+                timerInt = setInterval(() => {
+                    timer++;
+                    let m = Math.floor(timer/60).toString().padStart(2,'0');
+                    let s = (timer%60).toString().padStart(2,'0');
+                    document.getElementById('island-time').innerText = `${m}:${s}`;
+                }, 1000);
+            },
+
+            toggleIsland() {
+                const island = document.getElementById('dynamic-island');
+                island.classList.toggle('expanded');
+                if(island.classList.contains('expanded')) {
+                    let score = 0;
+                    userAns.forEach((arr, i) => {
+                        let c = 0; arr.forEach((v, j) => { if(v === questions[i].s[j].a) c++; });
+                        if(c===1) score+=0.1; else if(c===2) score+=0.25; else if(c===3) score+=0.5; else if(c===4) score+=1.0;
+                    });
+                    document.getElementById('island-score').innerText = `Tạm tính: ${score.toFixed(2)}`;
+                    setTimeout(() => island.classList.remove('expanded'), 4000);
+                }
+            },
+
+            render() {
+                let q = questions[curQ];
+                document.getElementById('q-lesson').innerText = q.l.toUpperCase();
+                document.getElementById('q-counter').innerText = `Câu ${curQ + 1}/${questions.length}`;
+                document.getElementById('q-passage').innerHTML = q.p;
+
+                let ctn = document.getElementById('stmt-container');
+                ctn.innerHTML = '';
+                
+                let labels = ['A', 'B', 'C', 'D'];
+                let hlClasses = ['kw-a', 'kw-b', 'kw-c', 'kw-d'];
+
+                q.s.forEach((stmt, idx) => {
+                    let ans = userAns[curQ][idx];
+                    let btnT = ans === true ? 'selected-true' : '';
+                    let btnF = ans === false ? 'selected-false' : '';
+
+                    ctn.innerHTML += `
+                        <div class="stmt-card">
+                            <div class="stmt-text">
+                                <span class="${hlClasses[idx]} mr-1">${labels[idx]}</span> ${stmt.t}
+                            </div>
+                            <div class="btn-choices">
+                                <button onclick="app.ans(${idx}, true)" id="btn-${idx}-t" class="tf-btn ${btnT}">Đ</button>
+                                <button onclick="app.ans(${idx}, false)" id="btn-${idx}-f" class="tf-btn ${btnF}">S</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            },
+
+            ans(idx, val) {
+                userAns[curQ][idx] = val;
+                if(navigator.vibrate) navigator.vibrate(10);
+                document.getElementById(`btn-${idx}-t`).className = `tf-btn ${val===true?'selected-true':''}`;
+                document.getElementById(`btn-${idx}-f`).className = `tf-btn ${val===false?'selected-false':''}`;
+            },
+
+            prev() { if(curQ > 0) { curQ--; this.render(); } },
+            next() { if(curQ < questions.length - 1) { curQ++; this.render(); } },
+
+            reqSubmit() {
+                let missing = 0;
+                userAns.forEach(a => { if(a.includes(null)) missing++; });
+                if(missing > 0 && !confirm(`Còn ${missing} câu chưa làm xong 4 ý. Nộp bài luôn?`)) return;
+                this.finish();
+            },
+
+            finish() {
+                clearInterval(timerInt);
+                let score = 0;
+                userAns.forEach((arr, i) => {
+                    let c = 0; arr.forEach((v, j) => { if(v === questions[i].s[j].a) c++; });
+                    if(c===1) score+=0.1; else if(c===2) score+=0.25; else if(c===3) score+=0.5; else if(c===4) score+=1.0;
+                });
+
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('screen-result').classList.add('active');
+                document.getElementById('island-status').innerText = "Đã nộp bài";
+
+                document.getElementById('res-score').innerText = score.toFixed(2);
+                document.getElementById('res-total').innerText = questions.length;
+
+                let rating = document.getElementById('res-rating');
+                let percent = score / questions.length;
+                if(percent >= 0.8) { rating.innerText = "Giỏi 🌟"; rating.style.color = "var(--sys-green)"; }
+                else if(percent >= 0.5) { rating.innerText = "Đạt 👍"; rating.style.color = "var(--sys-blue)"; }
+                else { rating.innerText = "Chưa Đạt ❌"; rating.style.color = "var(--sys-red)"; }
+
+                document.getElementById('btn-revenge').style.display = percent === 1 ? 'none' : 'block';
+
+                this.renderGrid();
+            },
+
+            renderGrid() {
+                let grid = document.getElementById('azota-grid');
+                grid.innerHTML = '';
+                let labels = ['a', 'b', 'c', 'd'];
+                
+                questions.forEach((q, i) => {
+                    userAns[i].forEach((ans, j) => {
+                        let isCorrect = ans === q.s[j].a;
+                        let cls = isCorrect ? 'gi-correct' : (ans === null ? 'gi-empty' : 'gi-wrong');
+                        grid.innerHTML += `
+                            <div class="grid-item ${cls}" onclick="app.showReview(${i})">
+                                ${i+1}${labels[j]}
+                            </div>
+                        `;
+                    });
+                });
+            },
+
+            showReview(qIdx) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('screen-review').classList.add('active');
+                
+                let q = questions[qIdx];
+                document.getElementById('rev-lesson').innerText = q.l.toUpperCase();
+                document.getElementById('rev-qnum').innerText = `Câu ${qIdx + 1}/${questions.length}`;
+                document.getElementById('rev-passage').innerHTML = q.p;
+
+                let ctn = document.getElementById('rev-stmt-container');
+                ctn.innerHTML = '';
+                
+                let labels = ['A', 'B', 'C', 'D'];
+                let hlClasses = ['kw-a', 'kw-b', 'kw-c', 'kw-d'];
+
+                q.s.forEach((stmt, idx) => {
+                    let ans = userAns[qIdx][idx];
+                    let isCorrect = ans === stmt.a;
+                    
+                    let btnT = ans === true ? (isCorrect ? 'selected-true' : 'selected-false') : '';
+                    let btnF = ans === false ? (isCorrect ? 'selected-true' : 'selected-false') : '';
+                    
+                    let boxClass = isCorrect ? 'correct' : 'wrong';
+
+                    let expHtml = `
+                        <div class="exp-box">
+                            <span style="color:var(--sys-orange); font-weight:700;">Giải thích:</span> ${stmt.e}
+                        </div>
+                    `;
+
+                    ctn.innerHTML += `
+                        <div class="review-card ${boxClass}">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                                <div class="stmt-text">
+                                    <span class="${hlClasses[idx]} mr-1">${labels[idx]}</span> ${stmt.t}
+                                </div>
+                                <div class="btn-choices" style="opacity: 0.8; pointer-events: none;">
+                                    <button class="tf-btn ${btnT}">Đ</button>
+                                    <button class="tf-btn ${btnF}">S</button>
+                                </div>
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-muted); margin-top: 10px;">
+                                Bạn chọn: <b style="color:white;">${ans===true?'Đ':(ans===false?'S':'Trống')}</b> | Đáp án: <b style="color:var(--sys-green);">${stmt.a?'Đ':'S'}</b>
+                            </div>
+                            ${!isCorrect ? expHtml : ''}
+                        </div>
+                    `;
+                });
+            },
+
+            closeReview() {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('screen-result').classList.add('active');
+            },
+
+            openPalette() {
+                let grid = document.getElementById('palette-grid');
+                grid.innerHTML = '';
+                questions.forEach((_, i) => {
+                    let c = userAns[i].filter(x => x !== null).length;
+                    let cls = 'gi-empty';
+                    if(c > 0 && c < 4) cls = 'gi-wrong';
+                    if(c === 4) cls = 'gi-correct';
+                    
+                    grid.innerHTML += `
+                        <div class="grid-item ${cls}" onclick="app.goto(${i})" style="${c>0 && c<4 ? 'background:transparent; border: 2px solid var(--sys-blue); color: var(--sys-blue);' : ''}">
+                            ${i+1}
+                        </div>
+                    `;
+                });
+                document.getElementById('modal-palette').style.display = 'flex';
+            },
+
+            goto(i) { curQ = i; this.render(); document.getElementById('modal-palette').style.display = 'none'; },
+
+            revenge() {
+                let wrongQuestions = [];
+                questions.forEach((q, i) => {
+                    let hasError = false;
+                    userAns[i].forEach((ans, j) => { if(ans !== q.s[j].a) hasError = true; });
+                    if(hasError) wrongQuestions.push(q);
+                });
+                questions = wrongQuestions;
+                app.start('revenge', true);
+            }
+        };
+    </script>
+</body>
+</html>
