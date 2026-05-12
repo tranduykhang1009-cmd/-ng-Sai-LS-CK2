@@ -599,9 +599,13 @@
                 }, 1000);
             },
 
-            toggleIsland() {
+           toggleIsland() {
                 const island = document.getElementById('dynamic-island');
                 island.classList.toggle('expanded');
+                
+                // Xóa bộ đếm thời gian cũ nếu người dùng bấm liên tục
+                if (this.islandTimer) clearTimeout(this.islandTimer);
+
                 if(island.classList.contains('expanded')) {
                     let c = 0;
                     userAns.forEach(arr => { if(!arr.includes(null)) c++; });
@@ -611,6 +615,11 @@
                     let fBtn = document.getElementById('island-btn-flag');
                     if(flags[curQ]) { fBtn.innerHTML = '<i class="fa-solid fa-flag"></i> Bỏ cờ'; fBtn.style.background = "rgba(245,158,11,0.4)"; }
                     else { fBtn.innerHTML = '<i class="fa-regular fa-flag"></i> Đánh dấu'; fBtn.style.background = "rgba(245,158,11,0.2)"; }
+
+                    // TỰ ĐỘNG THU NHỎ LẠI SAU 3 GIÂY (3000 milliseconds)
+                    this.islandTimer = setTimeout(() => {
+                        island.classList.remove('expanded');
+                    }, 2500);
                 }
             },
 
