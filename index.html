@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Học Sử Pro - iOS 18</title>
+    <title>Học Sử Pro - Bản Hoàn Thiện</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -26,15 +26,15 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-main);
-            height: 100dvh; 
-            overflow: hidden; /* Khóa cuộn toàn trang */
+            height: 100dvh; /* Khóa cứng chiều cao màn hình */
+            overflow: hidden; /* Cấm lướt toàn trang */
             margin: 0;
             display: flex;
             flex-direction: column;
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- DYNAMIC ISLAND (Thực dụng & Hữu ích) --- */
+        /* --- DYNAMIC ISLAND --- */
         .island-wrapper {
             position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
             z-index: 1000; display: flex; justify-content: center; width: 100%;
@@ -51,7 +51,7 @@
             overflow: hidden; position: relative;
         }
         .dynamic-island.expanded {
-            width: 350px; height: 140px; border-radius: 35px; padding: 16px;
+            width: 340px; height: 160px; border-radius: 35px; padding: 20px;
             background: rgba(15,15,15,0.9); backdrop-filter: blur(20px);
         }
         
@@ -59,77 +59,104 @@
         .dynamic-island.expanded .island-idle { opacity: 0; pointer-events: none; position: absolute; }
         
         .island-full {
-            opacity: 0; position: absolute; inset: 0; padding: 16px;
+            opacity: 0; position: absolute; inset: 0; padding: 20px;
             display: flex; flex-direction: column; justify-content: space-between;
             transition: opacity 0.3s 0.2s; pointer-events: none;
         }
         .dynamic-island.expanded .island-full { opacity: 1; pointer-events: auto; }
+
+        .visualizer { display: flex; gap: 3px; align-items: flex-end; height: 12px; }
+        .bar { width: 3px; background: var(--sys-orange); border-radius: 2px; animation: bounce 0.6s infinite alternate; }
+        .bar:nth-child(2) { animation-delay: 0.2s; }
+        .bar:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0% { height: 4px; } 100% { height: 12px; } }
 
         /* --- SCREEN QUẢN LÝ --- */
         .screen { display: none; flex-direction: column; height: 100%; width: 100%; }
         .screen.active { display: flex; animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 
-        /* --- GIẢI PHÁP CHỐNG ZALO CHE MÀN HÌNH --- */
+        /* --- BỐ CỤC CHỐNG LƯỚT ZALO --- */
+        .top-nav {
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 56px 16px 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0; background: var(--bg-dark);
+        }
+
         .split-top {
-            flex: 0 0 38dvh;
-            overflow-y: auto; padding: 60px 16px 16px 16px;
+            flex: 0 0 30dvh; /* Chiếm 30% màn hình */
+            overflow-y: auto; padding: 12px 16px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
             background: radial-gradient(circle at top, rgba(59,130,246,0.05), transparent 80%);
         }
+
         .split-bot {
-            flex: 1; 
+            flex: 1;
             display: flex; flex-direction: column;
-            padding: 12px 16px 0 16px;
+            overflow: hidden; /* Cấm lướt khung ngoài */
+            background: var(--bg-dark);
         }
+
+        .mid-nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.02);
+            flex-shrink: 0;
+        }
+        
         .stmt-container {
-            flex: 1; 
+            flex: 1;
             display: flex; flex-direction: column; gap: 10px;
-            overflow-y: auto; /* Cho phép lướt phần đáp án */
-            padding-bottom: 100px; /* Tránh thanh điều hướng của Zalo */
-            padding-top: 4px;
+            overflow-y: auto; /* Lướt thoải mái */
+            padding: 12px 16px 120px 16px; /* Cách đáy 120px chống Zalo */
+            overscroll-behavior-y: contain;
         }
         
         ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
 
-        /* Nút Đúng / Sai */
         .stmt-card {
             background: var(--card-bg); border-radius: 16px; padding: 12px;
             display: flex; align-items: center; justify-content: space-between; gap: 12px;
             border: 1px solid rgba(255,255,255,0.03);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            flex-shrink: 0;
         }
+
         .stmt-text {
-            font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--text-main); flex: 1;
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px; font-weight: 600; line-height: 1.4;
+            color: var(--text-main); flex: 1;
         }
+
+        /* Nút Đúng / Sai */
         .btn-choices { display: flex; gap: 8px; flex-shrink: 0; }
         .tf-btn {
             width: 40px; height: 40px; border-radius: 12px;
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
             color: var(--text-muted); font-weight: 800; font-size: 14px;
-            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
         }
         .tf-btn:active { transform: scale(0.9); }
         .tf-btn.selected-true { background: rgba(34,197,94,0.2); border-color: var(--sys-green); color: var(--sys-green); box-shadow: 0 0 10px rgba(34,197,94,0.3); }
         .tf-btn.selected-false { background: rgba(239,68,68,0.2); border-color: var(--sys-red); color: var(--sys-red); box-shadow: 0 0 10px rgba(239,68,68,0.3); }
 
-        /* Bôi màu từ khóa */
+        /* Từ khóa bôi màu */
         .kw-a { color: var(--sys-red); font-weight: 800; text-shadow: 0 0 8px rgba(239,68,68,0.4); }
         .kw-b { color: var(--sys-green); font-weight: 800; text-shadow: 0 0 8px rgba(34,197,94,0.4); }
         .kw-c { color: var(--sys-blue); font-weight: 800; text-shadow: 0 0 8px rgba(59,130,246,0.4); }
         .kw-d { color: var(--sys-orange); font-weight: 800; text-shadow: 0 0 8px rgba(245,158,11,0.4); }
 
-        /* --- Header / Layout --- */
-        .top-nav { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        /* Nút Navigation */
         .nav-btn {
             background: var(--card-bg); padding: 8px 16px; border-radius: 12px; font-weight: 700; font-size: 14px;
-            display: flex; align-items: center; justify-content: center; color: white; border: 1px solid rgba(255,255,255,0.05); transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; color: white; border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.2s;
         }
         .nav-btn:active { transform: scale(0.95); }
-        .btn-submit { background: var(--sys-red); color: white; border: none; box-shadow: 0 4px 15px rgba(239,68,68,0.4); }
+        .btn-submit { background: rgba(239,68,68,0.15); color: var(--sys-red); border: 1px solid var(--sys-red); }
 
-        /* --- Thu nhỏ Màn hình Azota Result --- */
+        /* --- Màn hình Azota Result --- */
         .azota-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 16px; padding-bottom: 30px; }
         .grid-item {
             aspect-ratio: 1.2; border-radius: 6px; display: flex; align-items: center; justify-content: center;
@@ -142,19 +169,27 @@
         .flag-dot { position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; background: var(--sys-orange); border-radius: 50%; border: 2px solid var(--bg-dark); }
 
         /* --- Màn hình Review --- */
-        .review-card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 2px solid transparent; }
+        .review-card {
+            background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 12px;
+            border: 2px solid transparent; flex-shrink: 0;
+        }
         .review-card.correct { border-color: var(--sys-green); background: rgba(34,197,94,0.05); }
         .review-card.wrong { border-color: var(--sys-red); background: rgba(239,68,68,0.05); }
-        .exp-box { margin-top: 12px; padding: 12px; border-radius: 12px; font-size: 13px; line-height: 1.5; background: rgba(255,255,255,0.05); color: #cbd5e1; }
-
+        .exp-box {
+            margin-top: 12px; padding: 12px; border-radius: 12px; font-size: 13px; line-height: 1.5;
+            background: rgba(255,255,255,0.05); color: #cbd5e1;
+        }
+        
         .watermark { position: fixed; bottom: 10px; right: 10px; font-size: 10px; color: rgba(255,255,255,0.2); z-index: 9999; pointer-events: none; font-weight: 600; }
     </style>
 </head>
 <body>
     <div class="watermark">by Trần Duy Khang 11A8</div>
 
+    <!-- DYNAMIC ISLAND -->
     <div class="island-wrapper">
         <div class="dynamic-island" id="dynamic-island" onclick="app.toggleIsland()">
+            <!-- Thu nhỏ -->
             <div class="island-idle">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <div style="width:10px; height:10px; border-radius:50%; background:#111; box-shadow:inset -1px -1px 2px rgba(255,255,255,0.2);"></div>
@@ -163,46 +198,57 @@
                 <div id="island-mini-progress" style="font-size: 12px; font-weight: 800; color: var(--sys-orange);">0/22</div>
             </div>
             
+            <!-- Phóng to -->
             <div class="island-full">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:12px;">
                         <img src="https://cdn-icons-png.flaticon.com/512/3113/3113054.png" style="width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,0.1); padding:4px;">
                         <div>
                             <div style="font-size:15px; font-weight:700;" id="island-name">Xin chào!</div>
-                            <div style="font-size:12px; color:var(--text-muted);" id="island-status">Đã làm: 0/22 ý</div>
+                            <div style="font-size:12px; color:var(--text-muted);" id="island-status">Đang tải...</div>
                         </div>
                     </div>
                 </div>
                 
-                <div style="margin-top: 12px; width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                <div style="margin-top: 16px; width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
                     <div id="island-progress-bar" style="height: 100%; width: 0%; background: var(--sys-blue); transition: width 0.3s;"></div>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
-                    <button onclick="app.openPalette(); event.stopPropagation();" style="display:flex; align-items:center; gap:6px; background:rgba(59,130,246,0.2); color:var(--sys-blue); padding:6px 12px; border-radius:12px; border:none; font-weight:700; font-size:13px;"><i class="fa-solid fa-list"></i> Danh sách</button>
-                    <button onclick="app.toggleFlag(); event.stopPropagation();" id="island-btn-flag" style="display:flex; align-items:center; gap:6px; background:rgba(245,158,11,0.2); color:var(--sys-orange); padding:6px 12px; border-radius:12px; border:none; font-weight:700; font-size:13px;"><i class="fa-regular fa-flag"></i> Đánh dấu</button>
-                    <button onclick="app.reqSubmit(); event.stopPropagation();" style="display:flex; align-items:center; gap:6px; background:rgba(239,68,68,0.2); color:var(--sys-red); padding:6px 12px; border-radius:12px; border:none; font-weight:700; font-size:13px;"><i class="fa-solid fa-check-double"></i> Nộp bài</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+                    <button onclick="app.openPalette(); event.stopPropagation();" style="display:flex; align-items:center; gap:6px; background:rgba(59,130,246,0.2); color:var(--sys-blue); padding:8px 14px; border-radius:12px; border:none; font-weight:700; font-size:13px;"><i class="fa-solid fa-list"></i> Danh sách</button>
+                    <button onclick="app.toggleFlag(); event.stopPropagation();" id="island-btn-flag" style="display:flex; align-items:center; gap:6px; background:rgba(245,158,11,0.2); color:var(--sys-orange); padding:8px 14px; border-radius:12px; border:none; font-weight:700; font-size:13px;"><i class="fa-regular fa-flag"></i> Đánh dấu</button>
+                    <button onclick="app.reqSubmit(); event.stopPropagation();" style="display:flex; align-items:center; gap:6px; background:rgba(239,68,68,0.2); color:var(--sys-red); padding:8px 14px; border-radius:12px; border:none; font-weight:700; font-size:13px;"><i class="fa-solid fa-check-double"></i> Nộp bài</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- MÀN HÌNH CHÍNH -->
     <div id="screen-home" class="screen active" style="padding: 24px; justify-content: center;">
         <h1 style="font-family:'Nunito'; font-size: 36px; font-weight: 800; margin-bottom: 8px; color: var(--sys-blue); text-align: center;">Học Sử Pro</h1>
-        <p style="color: var(--text-muted); text-align: center; margin-bottom: 30px; font-size: 14px;">Giao diện siêu mượt - Vuốt thả nhẹ nhàng</p>
+        <p style="color: var(--text-muted); text-align: center; margin-bottom: 30px; font-size: 14px;">Giao diện chuẩn thi - Cập nhật chống Zalo</p>
         
-        <input type="text" id="input-name" placeholder="Nhập tên của bạn..." style="width: 100%; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 18px; color: white; font-size: 16px; margin-bottom: 24px; outline: none; text-align: center; font-weight: 600;">
+        <input type="text" id="input-name" placeholder="Nhập tên của bạn..." style="width: 100%; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 18px; color: white; font-size: 16px; margin-bottom: 24px; outline: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); text-align: center; font-weight: 600;">
         
         <div style="display: flex; flex-direction: column; gap: 12px;">
             <button class="nav-btn" onclick="app.start('11')" style="justify-content: space-between; padding: 16px;"><span style="color:var(--sys-orange)"><i class="fa-solid fa-landmark mr-2"></i> Bài 11 (6 Câu)</span> <i class="fa-solid fa-chevron-right text-gray-600"></i></button>
             <button class="nav-btn" onclick="app.start('12')" style="justify-content: space-between; padding: 16px;"><span style="color:var(--sys-blue)"><i class="fa-solid fa-water mr-2"></i> Bài 12 (10 Câu)</span> <i class="fa-solid fa-chevron-right text-gray-600"></i></button>
             <button class="nav-btn" onclick="app.start('13')" style="justify-content: space-between; padding: 16px;"><span style="color:var(--sys-green)"><i class="fa-solid fa-anchor mr-2"></i> Bài 13 (6 Câu)</span> <i class="fa-solid fa-chevron-right text-gray-600"></i></button>
-            <button class="nav-btn" onclick="app.start('all')" style="justify-content: space-between; background: rgba(59,130,246,0.2); border-color: var(--sys-blue); padding: 16px;"><span style="color:white"><i class="fa-solid fa-bolt mr-2 text-blue-500"></i> Trộn 22 Câu Hỏi</span> <i class="fa-solid fa-chevron-right text-blue-500"></i></button>
+            <button class="nav-btn" onclick="app.start('all')" style="justify-content: space-between; background: rgba(59,130,246,0.2); border-color: var(--sys-blue); padding: 16px;"><span style="color:white"><i class="fa-solid fa-bolt mr-2 text-blue-500"></i> Trộn Tất Cả (22 Câu)</span> <i class="fa-solid fa-chevron-right text-blue-500"></i></button>
         </div>
     </div>
 
+    <!-- MÀN HÌNH LÀM BÀI -->
     <div id="screen-quiz" class="screen">
-        <div class="split-top">
+        <!-- TOP NAV NHƯ AZOTA (Có nút Thoát và Nộp Bài) -->
+        <div class="top-nav">
+            <button class="nav-btn" onclick="app.exit()"><i class="fa-solid fa-door-open mr-2"></i>Thoát</button>
+            <div style="font-size: 18px; font-weight: 800; font-family:'Nunito';" id="q-counter">Câu 1/22</div>
+            <button class="nav-btn btn-submit" onclick="app.reqSubmit()"><i class="fa-solid fa-paper-plane mr-2"></i>Nộp bài</button>
+        </div>
+
+        <!-- TƯ LIỆU -->
+        <div class="split-top" id="quiz-top">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
                 <span style="background: rgba(245,158,11,0.2); color: var(--sys-orange); padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 800;" id="q-lesson">BÀI 11</span>
                 <span style="font-size: 12px; color: var(--text-muted); font-weight: 700;"><i class="fa-solid fa-quote-left mr-1"></i> TƯ LIỆU ĐỌC</span>
@@ -211,17 +257,21 @@
         </div>
 
         <div class="split-bot">
-            <div class="top-nav">
-                <button class="nav-btn" style="padding: 8px 16px;" onclick="app.prev()"><i class="fa-solid fa-chevron-left mr-1"></i> Lùi</button>
-                <div style="font-size: 18px; font-weight: 800; font-family:'Nunito';" id="q-counter">Câu 1/22</div>
-                <button class="nav-btn" style="padding: 8px 16px; background: var(--sys-blue); border:none;" onclick="app.next()">Tới <i class="fa-solid fa-chevron-right ml-1"></i></button>
+            <!-- THANH ĐIỀU HƯỚNG CÂU NẰM NGAY TRÊN ĐÁP ÁN -->
+            <div class="mid-nav">
+                <button class="nav-btn" style="padding: 8px 16px;" onclick="app.prev()"><i class="fa-solid fa-chevron-left mr-2"></i> Lùi</button>
+                <button class="nav-btn" style="background: rgba(59,130,246,0.15); color: var(--sys-blue); border:none;" onclick="app.openPalette()"><i class="fa-solid fa-list-ul"></i></button>
+                <button class="nav-btn" style="padding: 8px 16px;" onclick="app.next()">Tới <i class="fa-solid fa-chevron-right ml-2"></i></button>
             </div>
             
+            <!-- ĐÂY LÀ PHẦN SCROLL ĐƯỢC CHỐNG ZALO -->
             <div class="stmt-container" id="stmt-container">
-                </div>
+                <!-- 4 ý render ở đây -->
+            </div>
         </div>
     </div>
 
+    <!-- MÀN HÌNH KẾT QUẢ -->
     <div id="screen-result" class="screen" style="padding: 24px; padding-top: 70px; overflow-y: auto;">
         <h2 style="font-size: 26px; font-weight: 800; margin-bottom: 16px; font-family:'Nunito'; text-align: center;">Báo Cáo Điểm</h2>
         <div style="background: var(--card-bg); padding: 24px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 24px; text-align: center;">
@@ -242,7 +292,14 @@
         </div>
     </div>
 
+    <!-- MÀN HÌNH REVIEW -->
     <div id="screen-review" class="screen">
+        <div class="top-nav">
+            <button class="nav-btn" onclick="app.closeReview()"><i class="fa-solid fa-chevron-left mr-2"></i> Bảng điểm</button>
+            <div style="font-size: 18px; font-weight: 800; font-family:'Nunito';" id="rev-qnum">Câu 1/22</div>
+            <div style="width: 80px;"></div> <!-- Dummy for layout -->
+        </div>
+
         <div class="split-top" id="rev-split-top">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
                 <span style="background: rgba(245,158,11,0.2); color: var(--sys-orange); padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 800;" id="rev-lesson">BÀI 11</span>
@@ -252,15 +309,13 @@
         </div>
 
         <div class="split-bot">
-            <div class="top-nav">
-                <div style="font-size: 20px; font-weight: 800; font-family:'Nunito';" id="rev-qnum">Câu 1/22</div>
-                <button class="nav-btn" style="padding: 8px 16px;" onclick="app.closeReview()"><i class="fa-solid fa-xmark mr-1"></i> Đóng</button>
+            <div class="stmt-container" id="rev-stmt-container" style="padding-top: 16px;">
+                <!-- Review statements -->
             </div>
-            <div class="stmt-container" id="rev-stmt-container">
-                </div>
         </div>
     </div>
 
+    <!-- Modal Palette Thu nhỏ -->
     <div id="modal-palette" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:2000; display:none; align-items:flex-end; backdrop-filter: blur(5px);">
         <div style="background: var(--card-bg); width: 100%; border-radius: 24px 24px 0 0; padding: 24px; max-height: 80vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -271,6 +326,7 @@
         </div>
     </div>
 
+    <!-- DỮ LIỆU GỐC & JAVASCRIPT -->
     <script>
         const masterData = [
             // --- BÀI 11 ---
@@ -512,7 +568,7 @@
             start(mode, isRevenge = false) {
                 if(!isRevenge) {
                     userName = document.getElementById('input-name').value.trim();
-                    if(!userName) userName = "Bạn";
+                    if(!userName) userName = "Trần Duy Khang 11A8";
                     
                     if(mode === 'all') questions = [...masterData].sort(()=>Math.random()-0.5);
                     else questions = masterData.filter(q => q.l === `Bài ${mode}`);
@@ -524,6 +580,9 @@
                 timer = 0;
                 
                 document.getElementById('island-name').innerText = `Xin chào, ${userName}!`;
+                document.getElementById('island-status').innerText = `Đang tải...`;
+                document.getElementById('island-mini-progress').innerText = `0/${questions.length}`;
+                document.getElementById('island-progress-bar').style.width = '0%';
                 
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 document.getElementById('screen-quiz').classList.add('active');
@@ -543,33 +602,25 @@
                 const island = document.getElementById('dynamic-island');
                 island.classList.toggle('expanded');
                 if(island.classList.contains('expanded')) {
-                    // Update progress
                     let c = 0;
                     userAns.forEach(arr => { if(!arr.includes(null)) c++; });
                     document.getElementById('island-status').innerText = `Đã làm: ${c}/${questions.length} câu`;
                     document.getElementById('island-progress-bar').style.width = `${(c/questions.length)*100}%`;
                     
-                    // Update score
-                    let score = 0;
-                    userAns.forEach((arr, i) => {
-                        let cnt = 0; arr.forEach((v, j) => { if(v === questions[i].s[j].a) cnt++; });
-                        if(cnt===1) score+=0.1; else if(cnt===2) score+=0.25; else if(cnt===3) score+=0.5; else if(cnt===4) score+=1.0;
-                    });
-                    document.getElementById('island-score').innerText = `Tạm tính: ${score.toFixed(2)}`;
-                    
-                    // Update flag btn
                     let fBtn = document.getElementById('island-btn-flag');
-                    if(flags[curQ]) { fBtn.innerHTML = '<i class="fa-solid fa-flag"></i> Bỏ cắm cờ'; fBtn.style.background = "rgba(245,158,11,0.4)"; }
-                    else { fBtn.innerHTML = '<i class="fa-regular fa-flag"></i> Cắm cờ'; fBtn.style.background = "rgba(245,158,11,0.2)"; }
+                    if(flags[curQ]) { fBtn.innerHTML = '<i class="fa-solid fa-flag"></i> Bỏ cờ'; fBtn.style.background = "rgba(245,158,11,0.4)"; }
+                    else { fBtn.innerHTML = '<i class="fa-regular fa-flag"></i> Đánh dấu'; fBtn.style.background = "rgba(245,158,11,0.2)"; }
                 }
             },
 
             toggleFlag() {
                 flags[curQ] = !flags[curQ];
-                if(flags[curQ]) {
-                    if(navigator.vibrate) navigator.vibrate(50);
-                }
-                this.toggleIsland(); // re-render island content
+                if(flags[curQ] && navigator.vibrate) navigator.vibrate(50);
+                this.toggleIsland();
+            },
+
+            exit() {
+                if(confirm("Bạn có chắc muốn thoát? Dữ liệu sẽ không được lưu.")) location.reload();
             },
 
             render() {
@@ -602,7 +653,8 @@
                     `;
                 });
 
-                // Update mini progress
+                document.getElementById('stmt-container').scrollTop = 0;
+                
                 let done = 0;
                 userAns.forEach(arr => { if(!arr.includes(null)) done++; });
                 document.getElementById('island-mini-progress').innerText = `${done}/${questions.length}`;
@@ -614,7 +666,6 @@
                 document.getElementById(`btn-${idx}-t`).className = `tf-btn ${val===true?'selected-true':''}`;
                 document.getElementById(`btn-${idx}-f`).className = `tf-btn ${val===false?'selected-false':''}`;
                 
-                // Update mini progress
                 let done = 0;
                 userAns.forEach(arr => { if(!arr.includes(null)) done++; });
                 document.getElementById('island-mini-progress').innerText = `${done}/${questions.length}`;
